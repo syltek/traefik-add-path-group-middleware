@@ -12,15 +12,33 @@ jobs:
       plugins: ${{ steps.list.outputs.plugins }}
     steps:
       - uses: actions/checkout@v5
+        with:
+          fetch-depth: 0
 
       - name: Discover plugin directories
         id: list
         run: |
-          plugins=$(find . -maxdepth 2 -name "go.mod" -not -path "./.git/*" \
+          # Get list of changed files between base and PR head
+          changed_files=$(git diff --name-only ${{ github.event.pull_request.base.sha }}...HEAD)
+
+          # Find all plugin directories
+          all_plugins=$(find . -maxdepth 2 -name "go.mod" -not -path "./.git/*" \
             | xargs -I{} dirname {} \
             | sed 's|^\./||' \
-            | sort \
-            | jq -R -s -c 'split("\n") | map(select(length > 0))')
+            | sort)
+
+          # Filter plugins that have changes
+          plugins_with_changes=""
+          while IFS= read -r plugin; do
+            # Check if any changed file is within this plugin directory
+            if echo "$changed_files" | grep -q "^$plugin/"; then
+              plugins_with_changes="${plugins_with_changes}${plugin}\n"
+            fi
+          done <<< "$all_plugins"
+
+          # Convert to JSON array
+          plugins=$(echo -e "$plugins_with_changes" | grep -v '^$' | jq -R -s -c 'split("\n") | map(select(length > 0))')
+
           echo "plugins=$plugins" >> "$GITHUB_OUTPUT"
           echo "Plugins with changes: $plugins"
 
