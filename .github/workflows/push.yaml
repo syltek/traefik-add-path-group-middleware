@@ -1,0 +1,44 @@
+name: Release Plugins
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  discover:
+    runs-on: ubuntu-latest
+    outputs:
+      plugins: ${{ steps.list.outputs.plugins }}
+    steps:
+      - uses: actions/checkout@v5
+
+      - name: Discover plugin directories
+        id: list
+        run: |
+          plugins=$(find . -maxdepth 2 -name "go.mod" -not -path "./.git/*" \
+            | xargs -I{} dirname {} \
+            | sed 's|^\./||' \
+            | sort \
+            | jq -R -s -c 'split("\n") | map(select(length > 0))')
+          echo "plugins=$plugins" >> "$GITHUB_OUTPUT"
+          echo "Plugins with changes: $plugins"
+
+  tag:
+    needs: discover
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        plugin: ${{ fromJson(needs.discover.outputs.plugins) }}
+    name: Tag ${{ matrix.plugin }} plugin
+    steps:
+      - uses: actions/checkout@v5
+
+      - name: Bump version and push tag
+        id: tag_version
+        uses: mathieudutour/github-tag-action@v6.2
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          default_bump: minor
+          tag_prefix: ${{ matrix.plugin }}-v

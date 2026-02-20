@@ -1,0 +1,62 @@
+name: Test Plugins
+
+on:
+  pull_request:
+    branches:
+      - main
+  push:
+    branches:
+      - main
+
+jobs:
+  discover:
+    runs-on: ubuntu-latest
+    outputs:
+      plugins: ${{ steps.list.outputs.plugins }}
+    steps:
+      - uses: actions/checkout@v5
+
+      - name: Discover plugin directories
+        id: list
+        run: |
+          plugins=$(find . -maxdepth 2 -name "go.mod" -not -path "./.git/*" \
+            | xargs -I{} dirname {} \
+            | sed 's|^\./||' \
+            | sort \
+            | jq -R -s -c 'split("\n") | map(select(length > 0))')
+          echo "plugins=$plugins" >> "$GITHUB_OUTPUT"
+          echo "Plugins with changes: $plugins"
+
+  test:
+    needs: discover
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        plugin: ${{ fromJson(needs.discover.outputs.plugins) }}
+    name: Test ${{ matrix.plugin }} plugin
+    steps:
+      - uses: actions/checkout@v5
+
+      - uses: actions/setup-go@v5
+        with:
+          go-version-file: ${{ matrix.plugin }}/go.mod
+          cache-dependency-path: ${{ matrix.plugin }}/go.sum
+
+      - name: gofmt
+        run: test -z "$(gofmt -l .)"
+        working-directory: ${{ matrix.plugin }}
+
+      - name: go vet
+        run: go vet ./...
+        working-directory: ${{ matrix.plugin }}
+
+      - name: go mod tidy check
+        run: |
+          go mod tidy
+          git diff --exit-code go.mod go.sum
+        working-directory: ${{ matrix.plugin }}
+
+      - name: unit test
+        run: go test ./...
+        working-directory: ${{ matrix.plugin }}
