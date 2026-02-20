@@ -30,7 +30,7 @@ func CreateConfig() *Config {
 	}
 }
 
-// AddPathHeader is the middleware plugin that injects the request path into a header.
+// AddPathHeader is the middleware plugin that injects the request path into a header
 type AddPathHeader struct {
 	next       http.Handler
 	headerName string
