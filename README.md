@@ -1,8 +1,17 @@
-# traefik-middlewares
+<div align="center">
+  <picture>
+    <source media="(prefers-color-scheme: dark)" srcset="docs/playtomic-logo-dark.png">
+    <source media="(prefers-color-scheme: light)" srcset="docs/playtomic-logo-light.png">
+    <img alt="Playtomic Logo" width="400">
+  </picture>
+</div>
+
+
+<h1 align="center">Traefik Middlewares</h1>
 
 This repository contains custom Traefik middleware plugins. Each subfolder is a standalone plugin that can be loaded into Traefik via its [plugin system](https://doc.traefik.io/traefik/plugins/).
 
-## Plugins
+## Plugins List
 
 | Plugin | Description |
 |--------|-------------|
@@ -10,7 +19,7 @@ This repository contains custom Traefik middleware plugins. Each subfolder is a 
 
 ---
 
-## add-path-header
+### add-path-header
 
 Extracts the path group (normalized path with IDs replaced by `*`) into a request header before forwarding it to the upstream service. ID segments (UUIDs, numeric IDs, alphanumeric slugs) are replaced with `*` to create a normalized path group. Useful for grouping requests by path pattern rather than specific IDs.
 
@@ -22,41 +31,24 @@ Extracts the path group (normalized path with IDs replaced by `*`) into a reques
 
 ---
 
-## Usage in terraform-aws-eks-cluster
+## Usage in Traefik
 
-The `terraform-aws-eks-cluster` module manages Traefik via a `helm_release`. Plugins are registered in the `experimental.plugins` block of the Helm values, and then activated per-route using a `Middleware` CRD.
+If you manage Traefik via a `helm_release`, plugins are registered in the `experimental.plugins` block of the Helm values, and then activated per-route using a `Middleware` CRD.
 
 ### 1. Enable the plugin in the module
 
-In the `ingress` config of your cluster module call, add the plugin to the `experimental.plugins` block. In `k8s_ingress.tf`, extend the `experimental` value passed to the Helm release:
+Add the plugin to the `experimental.plugins` block with the desired plugin and
+version.
 
 ```hcl
 experimental = {
   plugins = {
     addPathHeader = {
-      moduleName = "github.com/syltek/traefik-middlewares/add-path-header"
-      version    = "v0.1.0"
+      moduleName = "github.com/syltek/traefik-middlewares/<plugin-name>"
+      version    = "<plugin-version>"
     }
   }
 }
-```
-
-The full context inside `helm_release.traefik_ingress` values looks like:
-
-```hcl
-values = [yamlencode(merge(
-  {
-    # ... existing values ...
-    experimental = {
-      plugins = {
-        addPathHeader = {
-          moduleName = "github.com/syltek/traefik-middlewares/add-path-header"
-          version    = "v0.1.0"
-        }
-      }
-    }
-  }
-))]
 ```
 
 ### 2. Create the Middleware resource
@@ -69,13 +61,13 @@ extraObjects = [
     apiVersion = "traefik.io/v1alpha1"
     kind       = "Middleware"
     metadata = {
-      name      = "add-path-header"
+      name      = "<middleware-name>"
       namespace = "traefik"
     }
     spec = {
       plugin = {
-        addPathHeader = {
-          headerName = "x-path-group"
+        <plugin-name> = {
+          <plugin-config> = <plugin-config-value>
         }
       }
     }
@@ -93,7 +85,6 @@ apiVersion: traefik.io/v1alpha1
 kind: IngressRoute
 metadata:
   name: my-service
-  namespace: anemone
 spec:
   entryPoints:
     - web
@@ -101,7 +92,7 @@ spec:
     - match: Host(`my-service.example.com`)
       kind: Rule
       middlewares:
-        - name: add-path-header
+        - name: <middleware-name>
           namespace: traefik
       services:
         - name: my-service
@@ -122,9 +113,14 @@ spec:
 
 ## CI
 
-The GitHub Actions workflow (`.github/workflows/test.yaml`) runs on every pull request and push to `main`. For each plugin it runs:
+The GitHub Actions workflow (`.github/workflows/test.yaml`) runs on every pull request for changed plugins. For each plugin it runs:
 
 - `gofmt` — fails if code is not properly formatted
 - `go vet` — static analysis
 - `go mod tidy` check — fails if `go.mod`/`go.sum` are not up to date
 - `yaegi test` — runs tests using the Yaegi interpreter (the same runtime Traefik uses to execute plugins)
+
+When a plugin is pushed to `main`, the GitHub Actions workflow (`.github/workflows/push.yaml`) runs and:
+
+- creates a new tag
+- pushes the tag to the repository
