@@ -9,48 +9,9 @@ permissions:
   contents: write
 
 jobs:
-  discover:
-    runs-on: ubuntu-latest
-    outputs:
-      plugins: ${{ steps.list.outputs.plugins }}
-    steps:
-      - uses: actions/checkout@v5
-
-      - name: Discover plugin directories
-        id: list
-        run: |
-          # Get list of changed files (use before/after commits from push event)
-          changed_files=$(git ls-tree -r --name-only HEAD)
-
-          # Find all plugin directories
-          all_plugins=$(find . -maxdepth 2 -name "go.mod" -not -path "./.git/*" \
-            | xargs -I{} dirname {} \
-            | sed 's|^\./||' \
-            | sort)
-
-          # Filter plugins that have changes
-          plugins_with_changes=""
-          while IFS= read -r plugin; do
-            # Check if any changed file is within this plugin directory
-            if echo "$changed_files" | grep -q "^$plugin/"; then
-              plugins_with_changes="${plugins_with_changes}${plugin}\n"
-            fi
-          done <<< "$all_plugins"
-
-          # Convert to JSON array
-          plugins=$(echo -e "$plugins_with_changes" | grep -v '^$' | jq -R -s -c 'split("\n") | map(select(length > 0))')
-
-          echo "plugins=$plugins" >> "$GITHUB_OUTPUT"
-          echo "Plugins with changes: $plugins"
-
   tag:
-    needs: discover
     runs-on: ubuntu-latest
-    strategy:
-      fail-fast: false
-      matrix:
-        plugin: ${{ fromJson(needs.discover.outputs.plugins) }}
-    name: Tag ${{ matrix.plugin }} plugin
+    name: Tag plugin
     steps:
       - uses: actions/checkout@v5
 
@@ -60,4 +21,4 @@ jobs:
         with:
           github_token: ${{ secrets.GITHUB_TOKEN }}
           default_bump: minor
-          tag_prefix: ${{ matrix.plugin }}-v
+          tag_prefix: v

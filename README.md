@@ -7,29 +7,16 @@
 </div>
 
 
-<h1 align="center">Traefik Middlewares</h1>
+<h1 align="center">Traefik Add Path Group Middleware</h1>
 
-This repository contains custom Traefik middleware plugins. Each subfolder is a standalone plugin that can be loaded into Traefik via its [plugin system](https://doc.traefik.io/traefik/plugins/).
+This repository contains a custom Traefik middleware plugin that extracts the path group (normalized path with IDs replaced by `*`) into a request header before forwarding it to the upstream service. ID segments (UUIDs, numeric IDs, alphanumeric slugs) are replaced with `*` to create a normalized path group. Useful for grouping requests by path pattern rather than specific IDs.
 
-## Plugins List
-
-| Plugin | Description |
-|--------|-------------|
-| [`add-path-header`](./add-path-header/) | Extracts the path group (normalized path with IDs replaced) into a configurable request header |
-
----
-
-### add-path-header
-
-Extracts the path group (normalized path with IDs replaced by `*`) into a request header before forwarding it to the upstream service. ID segments (UUIDs, numeric IDs, alphanumeric slugs) are replaced with `*` to create a normalized path group. Useful for grouping requests by path pattern rather than specific IDs.
-
-**Configuration:**
+## Configuration
 
 | Field | Type | Default | Description |
 |-------|------|---------|-------------|
 | `headerName` | `string` | `x-path-group` | Name of the request header to set |
 
----
 
 ## Usage in Traefik
 
@@ -44,7 +31,7 @@ version.
 experimental = {
   plugins = {
     addPathHeader = {
-      moduleName = "github.com/syltek/traefik-middlewares/<plugin-name>"
+      moduleName = "github.com/syltek/traefik-add-path-group-middleware"
       version    = "<plugin-version>"
     }
   }
@@ -66,8 +53,8 @@ extraObjects = [
     }
     spec = {
       plugin = {
-        <plugin-name> = {
-          <plugin-config> = <plugin-config-value>
+        addPathGroup = {
+          headerName = "x-path-group"
         }
       }
     }
@@ -98,29 +85,3 @@ spec:
         - name: my-service
           port: 8080
 ```
-
----
-
-## Adding a new plugin
-
-1. Create a new subfolder with the plugin name (e.g. `my-plugin/`)
-2. Add the required files:
-   - `go.mod` — Go module with path `github.com/syltek/traefik-middlewares/<plugin-name>`
-   - `.traefik.yml` — plugin manifest
-   - `<plugin_name>.go` — plugin implementation
-   - `<plugin_name>_test.go` — tests compatible with `yaegi test`
-3. The CI workflow automatically discovers and tests all plugin directories containing a `go.mod`
-
-## CI
-
-The GitHub Actions workflow (`.github/workflows/test.yaml`) runs on every pull request for changed plugins. For each plugin it runs:
-
-- `gofmt` — fails if code is not properly formatted
-- `go vet` — static analysis
-- `go mod tidy` check — fails if `go.mod`/`go.sum` are not up to date
-- `yaegi test` — runs tests using the Yaegi interpreter (the same runtime Traefik uses to execute plugins)
-
-When a plugin is pushed to `main`, the GitHub Actions workflow (`.github/workflows/push.yaml`) runs and:
-
-- creates a new tag
-- pushes the tag to the repository
