@@ -1,16 +1,14 @@
-package add_path_header_test
+package add_path_header_group
 
 import (
 	"context"
 	"net/http"
 	"net/http/httptest"
 	"testing"
-
-	addpathheader "github.com/syltek/traefik-middlewares/add-path-header"
 )
 
 func TestAddPathHeader_SetsConfiguredHeader(t *testing.T) {
-	cfg := addpathheader.CreateConfig()
+	cfg := CreateConfig()
 	cfg.HeaderName = "X-Custom-Path"
 
 	next := http.HandlerFunc(func(rw http.ResponseWriter, req *http.Request) {
@@ -20,7 +18,7 @@ func TestAddPathHeader_SetsConfiguredHeader(t *testing.T) {
 		}
 	})
 
-	handler, err := addpathheader.New(context.Background(), next, cfg, "test-middleware")
+	handler, err := New(context.Background(), next, cfg, "test-middleware")
 	if err != nil {
 		t.Fatalf("unexpected error creating middleware: %v", err)
 	}
@@ -32,7 +30,7 @@ func TestAddPathHeader_SetsConfiguredHeader(t *testing.T) {
 }
 
 func TestAddPathHeader_DefaultHeaderName(t *testing.T) {
-	cfg := addpathheader.CreateConfig()
+	cfg := CreateConfig()
 
 	next := http.HandlerFunc(func(rw http.ResponseWriter, req *http.Request) {
 		got := req.Header.Get("x-path-group")
@@ -41,7 +39,7 @@ func TestAddPathHeader_DefaultHeaderName(t *testing.T) {
 		}
 	})
 
-	handler, err := addpathheader.New(context.Background(), next, cfg, "test-middleware")
+	handler, err := New(context.Background(), next, cfg, "test-middleware")
 	if err != nil {
 		t.Fatalf("unexpected error creating middleware: %v", err)
 	}
@@ -53,7 +51,7 @@ func TestAddPathHeader_DefaultHeaderName(t *testing.T) {
 }
 
 func TestAddPathHeader_EmptyHeaderNameFallsBackToDefault(t *testing.T) {
-	cfg := addpathheader.CreateConfig()
+	cfg := CreateConfig()
 	cfg.HeaderName = ""
 
 	next := http.HandlerFunc(func(rw http.ResponseWriter, req *http.Request) {
@@ -63,7 +61,7 @@ func TestAddPathHeader_EmptyHeaderNameFallsBackToDefault(t *testing.T) {
 		}
 	})
 
-	handler, err := addpathheader.New(context.Background(), next, cfg, "test-middleware")
+	handler, err := New(context.Background(), next, cfg, "test-middleware")
 	if err != nil {
 		t.Fatalf("unexpected error creating middleware: %v", err)
 	}
@@ -134,7 +132,7 @@ func TestAddPathHeader_ExtractsPathGroup(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			cfg := addpathheader.CreateConfig()
+			cfg := CreateConfig()
 
 			next := http.HandlerFunc(func(rw http.ResponseWriter, req *http.Request) {
 				got := req.Header.Get("x-path-group")
@@ -143,7 +141,7 @@ func TestAddPathHeader_ExtractsPathGroup(t *testing.T) {
 				}
 			})
 
-			handler, err := addpathheader.New(context.Background(), next, cfg, "test-middleware")
+			handler, err := New(context.Background(), next, cfg, "test-middleware")
 			if err != nil {
 				t.Fatalf("unexpected error creating middleware: %v", err)
 			}

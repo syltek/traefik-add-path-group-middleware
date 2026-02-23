@@ -1,4 +1,4 @@
-package add_path_header
+package add_path_header_group
 
 import (
 	"context"

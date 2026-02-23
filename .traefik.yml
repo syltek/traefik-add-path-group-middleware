@@ -1,0 +1,8 @@
+displayName: Add Path Group Header
+type: middleware
+import: github.com/syltek/traefik-add-path-group-middleware
+summary: Extracts the path group (normalized path with IDs replaced by *) into a configurable request header.
+testData:
+  headerName: x-path-group
+  path: /users/123/posts/456
+  expectedHeaderValue: /users/*/posts/*
