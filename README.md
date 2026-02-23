@@ -1,7 +1,7 @@
 <div align="center">
   <picture>
-    <source media="(prefers-color-scheme: dark)" srcset="docs/playtomic-logo-dark.png">
-    <source media="(prefers-color-scheme: light)" srcset="docs/playtomic-logo-light.png">
+    <source media="(prefers-color-scheme: dark)" srcset=".assets/playtomic-logo-dark.png">
+    <source media="(prefers-color-scheme: light)" srcset=".assets/playtomic-logo-light.png">
     <img alt="Playtomic Logo" width="400">
   </picture>
 </div>
@@ -10,6 +10,14 @@
 <h1 align="center">Traefik Add Path Group Middleware</h1>
 
 This repository contains a custom Traefik middleware plugin that extracts the path group (normalized path with IDs replaced by `*`) into a request header before forwarding it to the upstream service. ID segments (UUIDs, numeric IDs, alphanumeric slugs) are replaced with `*` to create a normalized path group. Useful for grouping requests by path pattern rather than specific IDs.
+
+<div align="center">
+  <picture>
+    <source srcset=".assets/plugin-logo.png">
+    <img alt="Plugin Logo" width="250">
+  </picture>
+</div>
+
 
 ## Configuration
 
