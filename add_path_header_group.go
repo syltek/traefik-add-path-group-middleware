@@ -18,12 +18,12 @@ var (
 	slugPattern = regexp.MustCompile(`^[a-zA-Z0-9_-]+$`)
 )
 
-// Config holds the plugin configuration.
+// Config holds the plugin configuration
 type Config struct {
 	HeaderName string `json:"headerName,omitempty"`
 }
 
-// CreateConfig returns the default plugin configuration.
+// CreateConfig returns the default plugin configuration
 func CreateConfig() *Config {
 	return &Config{
 		HeaderName: defaultHeaderName,
