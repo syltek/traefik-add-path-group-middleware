@@ -1,4 +1,4 @@
-package add_path_header_group
+package traefik_add_path_group_middleware
 
 import (
 	"context"
