@@ -9,7 +9,7 @@
 
 <h1 align="center">Traefik Add Path Group Middleware</h1>
 
-This repository contains a custom Traefik middleware plugin that extracts the path group (normalized path with IDs replaced by `*`) into a request header before forwarding it to the upstream service. ID segments (UUIDs, numeric IDs, alphanumeric slugs) are replaced with `*` to create a normalized path group. Useful for grouping requests by path pattern rather than specific IDs.
+This repository contains a custom Traefik middleware plugin that extracts the path group (normalized path with IDs replaced by labels) into a request header before forwarding it to the upstream service. ID segments (UUIDs, numeric IDs, alphanumeric slugs) are replaced with labels to create a normalized path group. Useful for grouping requests by path pattern rather than specific IDs.
 
 <div align="center">
   <picture>
@@ -24,6 +24,19 @@ This repository contains a custom Traefik middleware plugin that extracts the pa
 | Field | Type | Default | Description |
 |-------|------|---------|-------------|
 | `headerName` | `string` | `x-path-group` | Name of the request header to set |
+
+## Example
+
+The following paths will be normalized to the following path group and added to the `x-path-group` header:
+
+```
+/api/v1/users/550e8400-e29b-41d4-a716-446655440000/profile -> /api/v1/users/uuid/profile
+/api/v1/courts/42/bookings -> /api/v1/courts/numeric_id/bookings
+/api/v1/bookings/booking-abc-99/details -> /api/v1/bookings/slug/details
+/api/v1/users/user_42/profile -> /api/v1/users/slug/profile
+/api/v1/tenants/550e8400-e29b-41d4-a716-446655440000/courts/42/bookings/booking-abc-99 -> /api/v1/tenants/uuid/courts/numeric_id/bookings/slug
+```
+
 
 
 ## Usage in Traefik
