@@ -39,8 +39,10 @@ var (
 	cuidPattern = regexp.MustCompile(`^c[a-z0-9]{24}$`)
 	// cuid2Pattern matches CUID2 format: exactly 24 chars, starts with lowercase letter
 	cuid2Pattern = regexp.MustCompile(`^[a-z][a-z0-9]{23}$`)
-	// nanoidPattern matches NanoID format: exactly 21 chars, URL-safe alphabet
-	nanoidPattern = regexp.MustCompile(`^[A-Za-z0-9_-]{21}$`)
+	// nanoidPattern matches NanoID format: URL-safe alphabet with at least one digit.
+	// Length is checked separately (len == 21) since RE2 doesn't support lookaheads.
+	// ~97% of random 21-char NanoIDs contain at least one digit.
+	nanoidPattern = regexp.MustCompile(`^[A-Za-z0-9_-]*[0-9][A-Za-z0-9_-]*$`)
 	// filePattern matches file segments ending with a file extension (e.g., .html, .css, .js, .png)
 	// Matches segments that contain at least one character before a dot, followed by 1-15 alphanumeric characters
 	filePattern = regexp.MustCompile(`^.+\.\w{1,15}$`)
@@ -121,8 +123,8 @@ func identifyIDType(segment string) string {
 		return labelCUID2
 	}
 
-	// 7. Check NanoID (21 chars, broader charset)
-	if nanoidPattern.MatchString(segment) {
+	// 7. Check NanoID (21 chars, broader charset, must contain a digit)
+	if len(segment) == 21 && nanoidPattern.MatchString(segment) {
 		return labelNanoID
 	}
 
@@ -158,7 +160,7 @@ func identifyIDType(segment string) string {
 				ulidPattern.MatchString(suffix) ||
 				cuidPattern.MatchString(suffix) ||
 				cuid2Pattern.MatchString(suffix) ||
-				nanoidPattern.MatchString(suffix) {
+				(len(suffix) == 21 && nanoidPattern.MatchString(suffix)) {
 				// Recursively identify the ID type
 				if label := identifyIDType(suffix); label != "" {
 					return label

@@ -338,6 +338,11 @@ func TestAddPathHeader_ExtractsPathGroup(t *testing.T) {
 			path:     "/files/2024/report.pdf",
 			expected: "/files/numeric_id/file",
 		},
+		{
+			name:     "21 Characters path with no digits should not be treated as nanoid",
+			path:     "/api/match_recommendations",
+			expected: "/api/match_recommendations",
+		},
 	}
 
 	for _, tt := range tests {
