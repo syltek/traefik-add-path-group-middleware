@@ -30,11 +30,8 @@ This repository contains a custom Traefik middleware plugin that extracts the pa
 The following paths will be normalized to the following path group and added to the `x-path-group` header:
 
 ```
-/api/v1/users/550e8400-e29b-41d4-a716-446655440000/profile -> /api/v1/users/uuid/profile
-/api/v1/courts/42/bookings -> /api/v1/courts/numeric_id/bookings
-/api/v1/bookings/booking-abc-99/details -> /api/v1/bookings/slug/details
-/api/v1/users/user_42/profile -> /api/v1/users/slug/profile
-/api/v1/tenants/550e8400-e29b-41d4-a716-446655440000/courts/42/bookings/booking-abc-99 -> /api/v1/tenants/uuid/courts/numeric_id/bookings/slug
+/v1/users/550e8400-e29b-41d4-a716-446655440000/profile -> /v1/users/uuid/profile
+/cars/42/bookings -> /vcars/numeric_id/bookings
 ```
 
 

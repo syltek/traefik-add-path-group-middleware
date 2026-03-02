@@ -138,7 +138,7 @@ func identifyIDType(segment string) string {
 	if idx := strings.Index(segment, ":"); idx > 0 {
 		prefix := segment[:idx]
 		suffix := segment[idx+1:]
-		if prefixPattern.MatchString(prefix) && suffix != "" {
+		if suffix != "" && (prefixPattern.MatchString(prefix) || identifyIDType(prefix) != "") {
 			if label := identifyIDType(suffix); label != "" {
 				return label
 			}
@@ -175,16 +175,25 @@ func identifyIDType(segment string) string {
 	// 10. Check slug (alphanumeric with digits and separators)
 	if slugPattern.MatchString(segment) {
 		hasDigit := false
+		hasLetter := false
 		hasSeparator := false
 		for _, r := range segment {
 			if r >= '0' && r <= '9' {
 				hasDigit = true
+			}
+			if (r >= 'a' && r <= 'z') || (r >= 'A' && r <= 'Z') {
+				hasLetter = true
 			}
 			if r == '-' || r == '_' {
 				hasSeparator = true
 			}
 		}
 		if hasDigit && hasSeparator {
+			return labelSlug
+		}
+		// Also match purely alphanumeric segments (no separators) that mix letters and digits
+		// and are at least 8 characters long (avoids false positives with short version prefixes)
+		if hasDigit && hasLetter && !hasSeparator && len(segment) >= 8 {
 			return labelSlug
 		}
 	}

@@ -343,6 +343,31 @@ func TestAddPathHeader_ExtractsPathGroup(t *testing.T) {
 			path:     "/api/match_recommendations",
 			expected: "/api/match_recommendations",
 		},
+		{
+			name:     "Short alphanumeric code without separators",
+			path:     "/v1/short_urls/r8utqwuq",
+			expected: "/v1/short_urls/slug",
+		},
+		{
+			name:     "Multi-colon compound ID with UUID prefix",
+			path:     "/v2/wallets/syltekcrm:1741969:da76ab6d-43b3-11e8-8674-52540049669c:1012",
+			expected: "/v2/wallets/numeric_id",
+		},
+		{
+			name:     "Multi-colon compound ID with UUID prefix variant 2",
+			path:     "/v2/wallets/syltekcrm:1745620:07237a20-6c0e-4e08-b5dd-af0d956e2bd2:968",
+			expected: "/v2/wallets/numeric_id",
+		},
+		{
+			name:     "Multi-colon compound ID with UUID prefix and subpath",
+			path:     "/v2/wallets/syltekcrm:2922045:39a0ab47-01f5-4d19-a637-31bf721e81a1:968/promotions",
+			expected: "/v2/wallets/numeric_id/promotions",
+		},
+		{
+			name:     "Multi-colon compound ID with UUID prefix variant 3",
+			path:     "/v2/wallets/syltekcrm:3398218:da77ca4d-43b3-11e8-8674-52540049669c:968",
+			expected: "/v2/wallets/numeric_id",
+		},
 	}
 
 	for _, tt := range tests {
