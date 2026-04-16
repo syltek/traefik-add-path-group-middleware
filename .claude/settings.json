@@ -1,0 +1,11 @@
+{
+  "extraKnownMarketplaces": {
+    "playtomic-ai-plugins": {
+      "source": { "source": "github", "repo": "playtomic/ai-plugins" }
+    }
+  },
+  "enabledPlugins": {
+    "shared@playtomic-ai-plugins": true,
+    "infra@playtomic-ai-plugins": true
+  }
+}
