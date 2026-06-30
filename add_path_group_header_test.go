@@ -4,6 +4,7 @@ import (
 	"context"
 	"net/http"
 	"net/http/httptest"
+	"strings"
 	"testing"
 )
 
@@ -392,4 +393,62 @@ func TestAddPathHeader_ExtractsPathGroup(t *testing.T) {
 			handler.ServeHTTP(rw, req)
 		})
 	}
+}
+
+func TestSanitizeLabel(t *testing.T) {
+	tests := []struct {
+		name  string
+		input string
+		want  string
+	}{
+		{"clean path unchanged", "/v1/courses/pending_actions", "/v1/courses/pending_actions"},
+		{"newline removed", "/v1/courses/pending_action\ninjected", "/v1/courses/pending_actioninjected"},
+		{"carriage return removed", "/v1/a\r/b", "/v1/a/b"},
+		{"double quote removed", "/v1/a\"b", "/v1/ab"},
+		{"backslash removed", "/v1/a\\b", "/v1/ab"},
+		{"tab and NUL removed", "/v1/a\tb\x00c", "/v1/abc"},
+		{"DEL removed", "/v1/a\x7fb", "/v1/ab"},
+		{"empty stays empty", "", ""},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if got := sanitizeLabel(tt.input); got != tt.want {
+				t.Errorf("sanitizeLabel(%q) = %q, want %q", tt.input, got, tt.want)
+			}
+		})
+	}
+}
+
+func TestSanitizeLabel_BoundsLength(t *testing.T) {
+	got := sanitizeLabel("/" + strings.Repeat("a", 500))
+	if n := len([]rune(got)); n != maxLabelLen {
+		t.Errorf("expected length %d, got %d", maxLabelLen, n)
+	}
+}
+
+// TestAddPathHeader_SanitizesControlCharsInPath simulates a request whose decoded
+// URL path contains a newline (e.g. %0A in the request line, as seen during the
+// a2secure pentest). The header set for the Prometheus path_group label must not
+// contain any characters that would corrupt Traefik's /metrics exposition.
+func TestAddPathHeader_SanitizesControlCharsInPath(t *testing.T) {
+	next := http.HandlerFunc(func(rw http.ResponseWriter, req *http.Request) {
+		got := req.Header.Get("x-path-group")
+		if strings.ContainsAny(got, "\n\r\"\\") {
+			t.Errorf("header contains unsafe characters: %q", got)
+		}
+		if got != "/v1/courses/pending_actioninjected" {
+			t.Errorf("unexpected sanitized header: %q", got)
+		}
+	})
+
+	handler, err := New(context.Background(), next, CreateConfig(), "test-middleware")
+	if err != nil {
+		t.Fatalf("unexpected error creating middleware: %v", err)
+	}
+
+	req := httptest.NewRequest(http.MethodGet, "/placeholder", nil)
+	req.URL.Path = "/v1/courses/pending_action\ninjected" // decoded form of a %0A-laden path
+	rw := httptest.NewRecorder()
+
+	handler.ServeHTTP(rw, req)
 }
