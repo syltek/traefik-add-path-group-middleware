@@ -225,8 +225,31 @@ func extractPathGroup(path string) string {
 	return "/" + strings.Join(result, "/")
 }
 
+// maxLabelLen bounds the path-group value to limit metric-label cardinality and
+// abuse via long crafted paths.
+const maxLabelLen = 200
+
+// sanitizeLabel removes characters that are unsafe both in an HTTP header value and
+// in the Prometheus exposition format. Traefik exposes this header as a metric label
+// via metrics.prometheus.headerLabels, so an unsanitized request path containing a
+// newline, carriage return, double quote or backslash corrupts Traefik's /metrics
+// output and breaks the entire scrape. Control chars (< 0x20, which include CR/LF)
+// and DEL (0x7f) are dropped, and the result is bounded in length.
+func sanitizeLabel(s string) string {
+	s = strings.Map(func(r rune) rune {
+		if r < 0x20 || r == 0x7f || r == '"' || r == '\\' {
+			return -1
+		}
+		return r
+	}, s)
+	if runes := []rune(s); len(runes) > maxLabelLen {
+		s = string(runes[:maxLabelLen])
+	}
+	return s
+}
+
 func (a *AddPathHeader) ServeHTTP(rw http.ResponseWriter, req *http.Request) {
 	pathGroup := extractPathGroup(req.URL.Path)
-	req.Header.Set(a.headerName, pathGroup)
+	req.Header.Set(a.headerName, sanitizeLabel(pathGroup))
 	a.next.ServeHTTP(rw, req)
 }
